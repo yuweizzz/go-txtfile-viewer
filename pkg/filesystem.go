@@ -1,9 +1,7 @@
 package pkg
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"io/fs"
 	"net/http"
 	"net/url"
@@ -45,7 +43,6 @@ func (fsys CustomFileSystem) Open(name string) (http.File, error) {
 }
 
 func CustomFileServer(root CustomFileSystem) http.Handler {
-
 	return &TxtFileHandler{root}
 }
 
@@ -62,23 +59,20 @@ func (f *TxtFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	file, err := f.root.Open(upath)
 	if err != nil {
-		io.WriteString(w, "404 page not found1")
-		w.WriteHeader(404)
+		http.NotFound(w, r)
 		return
 	}
 	if stat, _ := file.Stat(); !stat.IsDir() {
-		contentBytes, err := io.ReadAll(file)
+		readSeeker := RenderPage(file, stat.Name())
 		if err != nil {
-			io.WriteString(w, err.Error())
-			w.WriteHeader(500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeContent(w, r, upath, time.Now(), bytes.NewReader(contentBytes))
+		http.ServeContent(w, r, upath, time.Now(), readSeeker)
 		return
 	}
-	dirList(w, r, TxtFile{file})
+	dirList(w, r, file.(http.File))
 }
 
 type anyDirs interface {
