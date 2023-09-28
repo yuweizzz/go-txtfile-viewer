@@ -1,14 +1,26 @@
 package main
 
 import (
-	"log"
+	"flag"
 	"net/http"
+	"strconv"
 
 	"github.com/yuweizzz/go-txtfile-viewer/pkg"
 )
 
+var (
+	Port int
+	Dir  string
+)
+
+func init() {
+	flag.IntVar(&Port, "p", 8080, "The listen port")
+	flag.StringVar(&Dir, "d", ".", "The dir where to serve")
+}
+
 func main() {
-	fsys := pkg.CustomFileSystem{http.Dir("/tmp/text_files")}
+	flag.Parse()
+	fsys := pkg.CustomFileSystem{http.Dir(Dir)}
 	http.Handle("/", pkg.CustomFileServer(fsys))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	http.ListenAndServe(":"+strconv.Itoa(Port), nil)
 }
