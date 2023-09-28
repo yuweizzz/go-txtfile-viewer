@@ -63,13 +63,13 @@ func (f *TxtFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if stat, _ := file.Stat(); !stat.IsDir() {
-		readSeeker := RenderPage(file, stat.Name())
+		rs := RenderPage(file, stat.Name())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeContent(w, r, upath, time.Now(), readSeeker)
+		http.ServeContent(w, r, upath, time.Now(), rs)
 		return
 	}
 	dirList(w, r, file.(http.File))

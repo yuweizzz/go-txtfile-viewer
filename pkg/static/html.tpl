@@ -38,7 +38,7 @@
 <body>
 <div id="parent">
     <div id="left"></div>
-    <div id="center">{{ printf "%s" .Content }}</div>
+    <div id="center">{{ .Content }}</div>
     <div id="right"></div>
 </div>
 </body>
