@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"io"
+	"bytes"
 )
 
 type TxtFile struct {
@@ -126,7 +128,7 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
 	sort.Slice(dirs, func(i, j int) bool { return dirs.name(i) < dirs.name(j) })
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, "<pre>\n")
+	buf := bytes.NewBufferString("")
 	for i, n := 0, dirs.len(); i < n; i++ {
 		name := dirs.name(i)
 		if dirs.isDir(i) {
@@ -136,7 +138,8 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
 		// part of the URL path, and not indicate the start of a query
 		// string or fragment.
 		url := url.URL{Path: name}
-		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", url.String(), htmlReplacer.Replace(name))
+		fmt.Fprintf(buf, "<a href=\"%s\">%s</a>\n", url.String(), htmlReplacer.Replace(name))
 	}
-	fmt.Fprintf(w, "</pre>\n")
+	buf = RenderBuffer(buf)
+	io.Copy(w, buf)
 }

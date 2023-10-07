@@ -42,3 +42,17 @@ func RenderPage(file http.File, filename string) (rs *bytes.Reader) {
 	rs = bytes.NewReader(buf.Bytes())
 	return
 }
+
+func RenderBuffer(buf *bytes.Buffer) *bytes.Buffer {
+	pd := &PageData{
+		Content: buf.String(),
+		Title:   "a",
+	}
+	pd.Pretty()
+	buf.Reset()
+	tpl := template.Must(template.New("html.tpl").ParseFS(tplfile, "static/html.tpl"))
+	if err := tpl.ExecuteTemplate(buf, "html.tpl", pd); err != nil {
+		panic(err)
+	}
+	return buf
+}
