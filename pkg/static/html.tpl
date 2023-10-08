@@ -1,32 +1,24 @@
 <html>
 <head>
     <title>{{ .Title }}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
     <style>
-        #parent {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
+        html body {
+            font-size: 16px;
         }
-        #left {
-            flex: auto;
-        }
-        #center {
+        #main {
+            margin: 0 auto;
             width: 700px;
+            word-wrap: break-word;
         }
-        #right {
-            flex: auto;
+        #content {
+            padding: 15px;
         }
         @media screen and (max-width: 700px) {
-            #left {
-                display: none;
-            }
-            #center {
+            #main {
                 width: 100%;
-            }
-            #right {
-                display: none;
+                font-size: 18px;
+                word-wrap: break-word;
             }
         }
         * {
@@ -36,10 +28,6 @@
     </style>
 </head>
 <body>
-<div id="parent">
-    <div id="left"></div>
-    <div id="center">{{ .Content }}</div>
-    <div id="right"></div>
-</div>
+<div id="main"><div id="content">{{ .Content }}</div></div>
 </body>
 </html>
