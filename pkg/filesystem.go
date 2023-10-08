@@ -27,6 +27,9 @@ func (f TxtFile) Readdir(n int) (fis []fs.FileInfo, err error) {
 			if strings.HasSuffix(file.Name(), ".txt") {
 				fis = append(fis, file)
 			}
+			if strings.HasSuffix(file.Name(), ".md") {
+				fis = append(fis, file)
+			}
 		}
 	}
 	return

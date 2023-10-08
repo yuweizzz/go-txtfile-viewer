@@ -6,6 +6,8 @@ import (
 	"text/template"
 	"net/http"
 	"strings"
+
+	"github.com/yuin/goldmark"
 )
 
 //go:embed static/html.tpl
@@ -32,6 +34,19 @@ func RenderPage(file http.File, filename string) (rs *bytes.Reader) {
 	pd := &PageData{
 		Content: buf.String(),
 		Title:   filename,
+	}
+	if strings.HasSuffix(filename, ".md") {
+		md := goldmark.New()
+		buf.Reset()
+		md.Convert([]byte(pd.Content), buf)
+		pd.Content = buf.String()
+		buf.Reset()
+		tpl := template.Must(template.New("html.tpl").ParseFS(tplfile, "static/html.tpl"))
+		if err := tpl.ExecuteTemplate(buf, "html.tpl", pd); err != nil {
+			panic(err)
+		}
+		rs = bytes.NewReader(buf.Bytes())
+		return
 	}
 	pd.Pretty()
 	buf.Reset()
