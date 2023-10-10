@@ -20,7 +20,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	fsys := pkg.CustomFileSystem{http.Dir(Dir)}
-	http.Handle("/", pkg.CustomFileServer(fsys))
+	fsys := pkg.TextFileSystem{http.Dir(Dir)}
+	http.Handle("/", pkg.TextFileServer(fsys))
 	http.ListenAndServe(":"+strconv.Itoa(Port), nil)
 }

@@ -7,27 +7,27 @@ import (
 	"net/url"
 	"sort"
 	"strings"
-	"time"
 	"io"
 	"bytes"
+	"log"
 )
 
-type TxtFile struct {
+type TextFile struct {
 	http.File
 }
 
-func (f TxtFile) Readdir(n int) (fis []fs.FileInfo, err error) {
+func (f TextFile) Readdir(n int) (fis []fs.FileInfo, err error) {
 	files, err := f.File.Readdir(n)
 	for _, file := range files {
-		if !strings.HasPrefix(file.Name(), ".") {
+		filename := file.Name()
+		if !strings.HasPrefix(filename, ".") {
 			if file.IsDir() {
 				fis = append(fis, file)
-				continue
-			}
-			if strings.HasSuffix(file.Name(), ".txt") {
+			} else if strings.HasSuffix(filename, ".txt") {
 				fis = append(fis, file)
-			}
-			if strings.HasSuffix(file.Name(), ".md") {
+			} else if strings.HasSuffix(filename, ".md") {
+				fis = append(fis, file)
+			} else if strings.HasSuffix(filename, ".markdown") {
 				fis = append(fis, file)
 			}
 		}
@@ -35,28 +35,29 @@ func (f TxtFile) Readdir(n int) (fis []fs.FileInfo, err error) {
 	return
 }
 
-type CustomFileSystem struct {
+type TextFileSystem struct {
 	http.FileSystem
 }
 
-func (fsys CustomFileSystem) Open(name string) (http.File, error) {
+func (fsys TextFileSystem) Open(name string) (http.File, error) {
 	file, err := fsys.FileSystem.Open(name)
 	if err != nil {
 		return nil, err
 	}
-	return TxtFile{file}, err
+	return TextFile{file}, err
 }
 
-func CustomFileServer(root CustomFileSystem) http.Handler {
-	return &TxtFileHandler{root}
+func TextFileServer(root TextFileSystem) http.Handler {
+	return &TextFileHandler{root}
 }
 
-type TxtFileHandler struct {
-	root CustomFileSystem
+type TextFileHandler struct {
+	root TextFileSystem
 }
 
-func (f *TxtFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	upath := r.URL.Path
+	log.Println("Incoming Request:", upath)
 	if !strings.HasPrefix(upath, "/") {
 		upath = "/" + upath
 		r.URL.Path = upath
@@ -74,9 +75,15 @@ func (f *TxtFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeContent(w, r, upath, time.Now(), rs)
+		http.ServeContent(w, r, upath, stat.ModTime(), rs)
 		return
 	}
+//
+//	if checkIfModifiedSince(r, stat.ModTime()) == condFalse {
+//		writeNotModified(w)
+//		return
+//	}
+//	setLastModified(w, d.ModTime())
 	dirList(w, r, file.(http.File))
 }
 
@@ -146,3 +153,49 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
 	buf = RenderBuffer(buf)
 	io.Copy(w, buf)
 }
+
+//
+//func checkIfModifiedSince(r *Request, modtime time.Time) condResult {
+//	if r.Method != "GET" && r.Method != "HEAD" {
+//		return condNone
+//	}
+//	ims := r.Header.Get("If-Modified-Since")
+//	if ims == "" || isZeroTime(modtime) {
+//		return condNone
+//	}
+//	t, err := ParseTime(ims)
+//	if err != nil {
+//		return condNone
+//	}
+//	// The Last-Modified header truncates sub-second precision so
+//	// the modtime needs to be truncated too.
+//	modtime = modtime.Truncate(time.Second)
+//	if ret := modtime.Compare(t); ret <= 0 {
+//		return condFalse
+//	}
+//	return condTrue
+//}
+//
+//
+//
+//func setLastModified(w ResponseWriter, modtime time.Time) {
+//	if !isZeroTime(modtime) {
+//		w.Header().Set("Last-Modified", modtime.UTC().Format(TimeFormat))
+//	}
+//}
+//
+//func writeNotModified(w ResponseWriter) {
+//	// RFC 7232 section 4.1:
+//	// a sender SHOULD NOT generate representation metadata other than the
+//	// above listed fields unless said metadata exists for the purpose of
+//	// guiding cache updates (e.g., Last-Modified might be useful if the
+//	// response does not have an ETag field).
+//	h := w.Header()
+//	delete(h, "Content-Type")
+//	delete(h, "Content-Length")
+//	delete(h, "Content-Encoding")
+//	if h.Get("Etag") != "" {
+//		delete(h, "Last-Modified")
+//	}
+//	w.WriteHeader(StatusNotModified)
+//}

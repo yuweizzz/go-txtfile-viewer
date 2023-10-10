@@ -23,7 +23,7 @@ func (p *PageData) Pretty() {
 	c := strings.Split(p.Content, "\n")
 	for num, value := range(c) {
 		if value != ""{
-			c[num] = "<br/><p>" + value + "</p>"
+			c[num] = "<p>" + value + "</p>"
 		}
 	}
 	p.Content = strings.Join(c, "")
