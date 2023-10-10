@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 //go:embed static/html.tpl
@@ -36,7 +37,7 @@ func RenderPage(file http.File, filename string) (rs *bytes.Reader) {
 		Title:   filename,
 	}
 	if strings.HasSuffix(filename, ".md") {
-		md := goldmark.New()
+		md := goldmark.New(goldmark.WithExtensions(extension.GFM))
 		buf.Reset()
 		md.Convert([]byte(pd.Content), buf)
 		pd.Content = buf.String()
