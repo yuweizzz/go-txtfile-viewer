@@ -9,6 +9,7 @@
       #main {
         margin: 0 auto;
         width: 700px;
+        word-wrap: break-word;
       }
       #content {
         padding: 15px;
@@ -20,6 +21,7 @@
         #main {
           width: 100%;
           font-size: 18px;
+          word-wrap: break-word;
         }
       }
       * {
