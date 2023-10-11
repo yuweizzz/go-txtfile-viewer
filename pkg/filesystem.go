@@ -70,21 +70,22 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	stat, _ := file.Stat()
 	if !stat.IsDir() {
-		rs := RenderPage(file, stat.Name())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		//if err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
+		rs, etag := RenderPage(file, stat.Name())
+		w.Header().Set("Etag", `"`+etag+`"`)
+		if !CheckIfNoneMatch(w, r) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			http.ServeContent(w, r, upath, stat.ModTime(), rs)
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeContent(w, r, upath, stat.ModTime(), rs)
-		return
-	}
-	if CheckIfModifiedSince(r, stat.ModTime()) {
+	} else if CheckIfModifiedSince(r, stat.ModTime()) {
 		WriteNotModified(w)
-		return
+	} else {
+		SetLastModified(w, stat.ModTime())
+		dirList(w, r, file.(http.File))
 	}
-	SetLastModified(w, stat.ModTime())
-	dirList(w, r, file.(http.File))
 }
 
 type anyDirs interface {

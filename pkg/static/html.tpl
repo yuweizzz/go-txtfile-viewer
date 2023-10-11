@@ -10,8 +10,12 @@
       html {
         font-size: 16px;
       }
-      p,h1,h2,h3,h4,h5,h6 {
+      p,h1,h2,h3,h4,h5,h6,table {
         margin-bottom: 16px;
+      }
+      img {
+        display:block;
+        width: 100%;
       }
       ol, ul {
         margin: 0;

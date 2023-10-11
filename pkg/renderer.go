@@ -6,6 +6,9 @@ import (
 	"text/template"
 	"net/http"
 	"strings"
+	"crypto/sha1"
+	"io"
+	"encoding/hex"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -29,13 +32,16 @@ func (p *PageData) Pretty() {
 	p.Content = strings.Join(c, "")
 }
 
-func RenderPage(file http.File, filename string) (rs *bytes.Reader) {
+func RenderPage(file http.File, filename string) (rs *bytes.Reader, etag string) {
 	buf := &bytes.Buffer{}
 	buf.ReadFrom(file)
 	pd := &PageData{
 		Content: buf.String(),
 		Title:   filename,
 	}
+	h := sha1.New()
+	io.Copy(h, buf)
+	etag = hex.EncodeToString(h.Sum(nil))
 	if strings.HasSuffix(filename, ".md") {
 		md := goldmark.New(goldmark.WithExtensions(extension.GFM))
 		buf.Reset()

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"strings"
+	"fmt"
 )
 
 // Modified from standard library
@@ -52,12 +53,6 @@ func etagStrongMatch(a, b string) bool {
 	return a == b && a != "" && a[0] == '"'
 }
 
-// etagWeakMatch reports whether a and b match using weak ETag comparison.
-// Assumes a and b are valid ETags.
-func etagWeakMatch(a, b string) bool {
-	return strings.TrimPrefix(a, "W/") == strings.TrimPrefix(b, "W/")
-}
-
 func checkIfNoneMatch(w http.ResponseWriter, r *http.Request) condResult {
 	inm := r.Header.Get("If-None-Match")
 	if inm == "" {
@@ -77,10 +72,11 @@ func checkIfNoneMatch(w http.ResponseWriter, r *http.Request) condResult {
 			return condFalse
 		}
 		etag, remain := scanETag(buf)
+		fmt.Println(buf)
 		if etag == "" {
 			break
 		}
-		if etagWeakMatch(etag, w.Header().Get("Etag")) {
+		if etagStrongMatch(etag, w.Header().Get("Etag")) {
 			return condFalse
 		}
 		buf = remain
@@ -88,7 +84,7 @@ func checkIfNoneMatch(w http.ResponseWriter, r *http.Request) condResult {
 	return condTrue
 }
 
-func EtagExpired(w http.ResponseWriter, r *http.Request) bool {
+func CheckIfNoneMatch(w http.ResponseWriter, r *http.Request) bool {
 	if checkIfNoneMatch(w, r) == condFalse {
 		if r.Method == "GET" || r.Method == "HEAD" {
 			WriteNotModified(w)
