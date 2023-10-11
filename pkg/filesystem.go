@@ -68,7 +68,8 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if stat, _ := file.Stat(); !stat.IsDir() {
+	stat, _ := file.Stat()
+	if !stat.IsDir() {
 		rs := RenderPage(file, stat.Name())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,12 +79,11 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.ServeContent(w, r, upath, stat.ModTime(), rs)
 		return
 	}
-//
-//	if checkIfModifiedSince(r, stat.ModTime()) == condFalse {
-//		writeNotModified(w)
-//		return
-//	}
-//	setLastModified(w, d.ModTime())
+	if CheckIfModifiedSince(r, stat.ModTime()) {
+		WriteNotModified(w)
+		return
+	}
+	SetLastModified(w, stat.ModTime())
 	dirList(w, r, file.(http.File))
 }
 
@@ -153,49 +153,3 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
 	buf = RenderBuffer(buf)
 	io.Copy(w, buf)
 }
-
-//
-//func checkIfModifiedSince(r *Request, modtime time.Time) condResult {
-//	if r.Method != "GET" && r.Method != "HEAD" {
-//		return condNone
-//	}
-//	ims := r.Header.Get("If-Modified-Since")
-//	if ims == "" || isZeroTime(modtime) {
-//		return condNone
-//	}
-//	t, err := ParseTime(ims)
-//	if err != nil {
-//		return condNone
-//	}
-//	// The Last-Modified header truncates sub-second precision so
-//	// the modtime needs to be truncated too.
-//	modtime = modtime.Truncate(time.Second)
-//	if ret := modtime.Compare(t); ret <= 0 {
-//		return condFalse
-//	}
-//	return condTrue
-//}
-//
-//
-//
-//func setLastModified(w ResponseWriter, modtime time.Time) {
-//	if !isZeroTime(modtime) {
-//		w.Header().Set("Last-Modified", modtime.UTC().Format(TimeFormat))
-//	}
-//}
-//
-//func writeNotModified(w ResponseWriter) {
-//	// RFC 7232 section 4.1:
-//	// a sender SHOULD NOT generate representation metadata other than the
-//	// above listed fields unless said metadata exists for the purpose of
-//	// guiding cache updates (e.g., Last-Modified might be useful if the
-//	// response does not have an ETag field).
-//	h := w.Header()
-//	delete(h, "Content-Type")
-//	delete(h, "Content-Length")
-//	delete(h, "Content-Encoding")
-//	if h.Get("Etag") != "" {
-//		delete(h, "Last-Modified")
-//	}
-//	w.WriteHeader(StatusNotModified)
-//}
