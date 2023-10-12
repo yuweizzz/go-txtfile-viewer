@@ -83,6 +83,8 @@
     </style>
   </head>
   <body>
-    <div id="main"><div id="content">{{ .Content }}</div></div>
+    <div id="main">
+      <div id="content">{{ .Content }}</div>
+    </div>
   </body>
 </html>

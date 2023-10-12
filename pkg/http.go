@@ -77,7 +77,6 @@ func checkIfNoneMatch(w http.ResponseWriter, r *http.Request) condResult {
 			return condFalse
 		}
 		etag, remain := scanETag(buf)
-		fmt.Println(buf)
 		if etag == "" {
 			break
 		}
@@ -186,17 +185,19 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	file, err := f.root.Open(upath)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	stat, _ := file.Stat()
 	modtime := stat.ModTime()
 	if !stat.IsDir() {
-		rs, etag := RenderPage(file, stat.Name())
-		SetEtag(w, etag)
+		pd := NewPageData(file)
+		pd.SumContent()
+		SetEtag(w, pd.CheckSum)
 		if !CheckIfNoneMatch(w, r) {
 			SetContentAsHTML(w)
-			http.ServeContent(w, r, upath, modtime, rs)
+			pd.Pretty()
+			http.ServeContent(w, r, upath, pd.ModTime, pd.RenderPage())
 		}
 	} else if CheckIfModifiedSince(r, modtime) {
 		WriteNotModified(w)
@@ -268,7 +269,11 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
 		url := url.URL{Path: name}
 		fmt.Fprintf(buf, "<a href=\"%s\">%s</a>\n", url.String(), htmlReplacer.Replace(name))
 	}
-	buf = RenderBuffer(buf)
+	if buf.Len() == 0 {
+		fmt.Fprintf(buf, "(empty)")
+	}
+	n, _ := f.Stat()
+	buf = RenderBuffer(n.Name(), buf)
 	SetContentAsHTML(w)
 	io.Copy(w, buf)
 }
