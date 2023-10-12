@@ -14,8 +14,11 @@
       p,h1,h2,h3,h4,h5,h6,table {
         margin-bottom: 16px;
       }
+      a {
+        text-decoration: none;
+      }
       img {
-        display:block;
+        display: block;
         width: 100%;
       }
       ol, ul {
