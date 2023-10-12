@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -32,15 +31,13 @@ type PageData struct {
 	Title    string
 	Type     FileType
 	CheckSum string
-	ModTime  time.Time
 }
 
 func NewPageData(file http.File) *PageData {
 	stat, _ := file.Stat()
 	pd := &PageData{
-		Title:   stat.Name(),
-		File:    file,
-		ModTime: stat.ModTime(),
+		Title: stat.Name(),
+		File:  file,
 	}
 	if strings.HasSuffix(pd.Title, ".txt") {
 		pd.Type = Txt
@@ -87,41 +84,6 @@ func (pd *PageData) RenderPage() *bytes.Reader {
 	}
 	return bytes.NewReader(buf.Bytes())
 }
-
-//func RenderPage(file http.File, filename string) (rs *bytes.Reader, etag string) {
-//	buf := &bytes.Buffer{}
-//	buf.ReadFrom(file)
-//	pd := &PageData{
-//		Content: buf.String(),
-//		Title:   filename,
-//		File:    file,
-//	}
-//	pd.SumContent()
-//	h := sha1.New()
-//	io.Copy(h, buf)
-//	etag = hex.EncodeToString(h.Sum(nil))
-//	if strings.HasSuffix(filename, ".md") {
-//		md := goldmark.New(goldmark.WithExtensions(extension.GFM))
-//		buf.Reset()
-//		md.Convert([]byte(pd.Content), buf)
-//		pd.Content = buf.String()
-//		buf.Reset()
-//		tpl := template.Must(template.New("html.tpl").ParseFS(tplfile, "static/html.tpl"))
-//		if err := tpl.ExecuteTemplate(buf, "html.tpl", pd); err != nil {
-//			panic(err)
-//		}
-//		rs = bytes.NewReader(buf.Bytes())
-//		return
-//	}
-//	pd.Pretty()
-//	buf.Reset()
-//	tpl := template.Must(template.New("html.tpl").ParseFS(tplfile, "static/html.tpl"))
-//	if err := tpl.ExecuteTemplate(buf, "html.tpl", pd); err != nil {
-//		panic(err)
-//	}
-//	rs = bytes.NewReader(buf.Bytes())
-//	return
-//}
 
 func RenderBuffer(title string, buf *bytes.Buffer) *bytes.Buffer {
 	pd := &PageData{

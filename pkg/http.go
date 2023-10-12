@@ -16,6 +16,7 @@ import (
 // Modified from standard library
 
 // ===== Etag Part =====
+
 type condResult int
 
 const (
@@ -104,6 +105,7 @@ func CheckIfNoneMatch(w http.ResponseWriter, r *http.Request) bool {
 // ===== Etag Part End =====
 
 // ===== Last-Modified Part =====
+
 var unixEpochTime = time.Unix(0, 0)
 
 // isZeroTime reports whether t is obviously unspecified (either zero or Unix()=0).
@@ -141,6 +143,7 @@ func CheckIfModifiedSince(r *http.Request, modtime time.Time) bool {
 // ===== Last-Modified Part End =====
 
 // ===== Common Part =====
+
 func WriteNotModified(w http.ResponseWriter) {
 	// RFC 7232 section 4.1:
 	// a sender SHOULD NOT generate representation metadata other than the
@@ -168,6 +171,7 @@ func SetEtag(w http.ResponseWriter, etag string) {
 // ===== Common Part End =====
 
 // ===== Handler Part =====
+
 func TextFileServer(root TextFileSystem) http.Handler {
 	return &TextFileHandler{root}
 }
@@ -189,7 +193,6 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stat, _ := file.Stat()
-	modtime := stat.ModTime()
 	if !stat.IsDir() {
 		pd := NewPageData(file)
 		pd.SumContent()
@@ -197,13 +200,13 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !CheckIfNoneMatch(w, r) {
 			SetContentAsHTML(w)
 			pd.Pretty()
-			http.ServeContent(w, r, upath, pd.ModTime, pd.RenderPage())
+			http.ServeContent(w, r, upath, stat.ModTime(), pd.RenderPage())
 		}
-	} else if CheckIfModifiedSince(r, modtime) {
+	} else if CheckIfModifiedSince(r, stat.ModTime()) {
 		WriteNotModified(w)
 	} else {
-		SetLastModified(w, modtime)
-		dirList(w, r, file.(http.File))
+		SetLastModified(w, stat.ModTime())
+		dirList(w, r, file.(http.File), stat.Name())
 	}
 }
 
@@ -235,7 +238,7 @@ var htmlReplacer = strings.NewReplacer(
 	"'", "&#39;",
 )
 
-func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
+func dirList(w http.ResponseWriter, r *http.Request, f http.File, fname string) {
 	// Prefer to use ReadDir instead of Readdir,
 	// because the former doesn't require calling
 	// Stat on every entry of a directory on Unix.
@@ -272,8 +275,7 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File) {
 	if buf.Len() == 0 {
 		fmt.Fprintf(buf, "(empty)")
 	}
-	n, _ := f.Stat()
-	buf = RenderBuffer(n.Name(), buf)
+	buf = RenderBuffer(fname, buf)
 	SetContentAsHTML(w)
 	io.Copy(w, buf)
 }
