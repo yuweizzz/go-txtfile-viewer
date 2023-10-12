@@ -9,6 +9,7 @@
       }
       html {
         font-size: 16px;
+        font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
       }
       p,h1,h2,h3,h4,h5,h6,table {
         margin-bottom: 16px;
