@@ -2,13 +2,13 @@ package pkg
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"embed"
-	"text/template"
+	"encoding/hex"
+	"io"
 	"net/http"
 	"strings"
-	"crypto/sha1"
-	"io"
-	"encoding/hex"
+	"text/template"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -24,8 +24,8 @@ type PageData struct {
 
 func (p *PageData) Pretty() {
 	c := strings.Split(p.Content, "\n")
-	for num, value := range(c) {
-		if value != ""{
+	for num, value := range c {
+		if value != "" {
 			c[num] = "<p>" + value + "</p>"
 		}
 	}
