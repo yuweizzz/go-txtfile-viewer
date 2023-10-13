@@ -200,7 +200,12 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !CheckIfNoneMatch(w, r) {
 			SetContentAsHTML(w)
 			pd.Pretty()
-			http.ServeContent(w, r, upath, stat.ModTime(), pd.RenderPage())
+			buf := pd.RenderPage()
+			if buf == nil {
+				http.Error(w, "render page failed", http.StatusInternalServerError)
+				return
+			}
+			http.ServeContent(w, r, upath, stat.ModTime(), buf)
 		}
 	} else if CheckIfModifiedSince(r, stat.ModTime()) {
 		WriteNotModified(w)
@@ -276,6 +281,10 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File, fname string) 
 		fmt.Fprintf(buf, "(empty)")
 	}
 	buf = RenderBuffer(fname, buf)
+	if buf == nil {
+		http.Error(w, "render page failed", http.StatusInternalServerError)
+		return
+	}
 	SetContentAsHTML(w)
 	io.Copy(w, buf)
 }
