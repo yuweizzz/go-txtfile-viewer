@@ -61,11 +61,18 @@ func (pd *PageData) Pretty() {
 	switch pd.Type {
 	case Txt:
 		scanner := bufio.NewScanner(strings.NewReader(pd.Content))
+		// MaxScanTokenSize: 64k 
+		readbuf := make([]byte, 0, 64*1024)
+		// Resize Buffer: 1M
+		scanner.Buffer(readbuf, 1024*1024)
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
 			if len(line) != 0 {
 				fmt.Fprintf(buf, "<p>%s</p>", line)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(buf, "scanning file error: ", err)
 		}
 		pd.Content = buf.String()
 	case Markdown:
