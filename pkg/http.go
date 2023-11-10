@@ -160,9 +160,11 @@ func WriteNotModified(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotModified)
 }
 
-func SetContentAsHTML(w http.ResponseWriter) {
-	if w.Header().Get("Content-Type") == "" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+func SetContentAsHTML(w http.ResponseWriter, charset string) {
+	if charset == "" {
+		w.Header().Set("Content-Type", "text/html")
+	} else {
+		w.Header().Set("Content-Type", "text/html; charset="+charset)
 	}
 }
 
@@ -197,14 +199,11 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stat, _ := file.Stat()
 	if !stat.IsDir() {
 		pd := NewPageData(file)
-		charset := pd.SumContent()
-		// need to refactor
-		if charset != "UTF-8" {
-			w.Header().Set("Content-Type", "text/html; charset=gb18030")
-		}
+		pd.SumContent()
 		SetEtag(w, pd.CheckSum)
 		if !CheckIfNoneMatch(w, r) {
-			SetContentAsHTML(w)
+			pd.DetectCharset()
+			SetContentAsHTML(w, pd.Charset)
 			pd.Pretty()
 			buf := pd.RenderPage()
 			if buf == nil {
@@ -291,7 +290,7 @@ func dirList(w http.ResponseWriter, r *http.Request, f http.File, fname string) 
 		http.Error(w, "render page failed", http.StatusInternalServerError)
 		return
 	}
-	SetContentAsHTML(w)
+	SetContentAsHTML(w, "UTF-8")
 	io.Copy(w, buf)
 }
 

@@ -12,9 +12,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/saintfish/chardet"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
-	"github.com/saintfish/chardet"
+	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 //go:embed static/html.tpl
@@ -34,6 +35,7 @@ type PageData struct {
 	Title    string
 	Type     FileType
 	CheckSum string
+	Charset  string
 }
 
 func NewPageData(file http.File) *PageData {
@@ -50,17 +52,25 @@ func NewPageData(file http.File) *PageData {
 	return pd
 }
 
-func (pd *PageData) SumContent() string {
+func (pd *PageData) SumContent() {
 	raw, _ := io.ReadAll(pd.File)
 	sum := sha1.Sum(raw)
 	pd.CheckSum = hex.EncodeToString(sum[:])
-	detector := chardet.NewTextDetector()
-	charset, err := detector.DetectBest(raw)
-	if err != nil {
-		panic(err)
-	}
 	pd.Content = string(raw)
-	return charset.Charset
+}
+
+func (pd *PageData) DetectCharset() {
+	detector := chardet.NewTextDetector()
+	charset, err := detector.DetectBest([]byte(pd.Content))
+	if err != nil {
+		pd.Charset = ""
+	} else {
+		pd.Charset = charset.Charset
+	}
+	if pd.Charset != "UTF-8" {
+		bins, _ := simplifiedchinese.GBK.NewEncoder().Bytes([]byte(pd.Title))
+		pd.Title = string(bins)
+	}
 }
 
 func (pd *PageData) Pretty() {
@@ -68,7 +78,7 @@ func (pd *PageData) Pretty() {
 	switch pd.Type {
 	case Txt:
 		scanner := bufio.NewScanner(strings.NewReader(pd.Content))
-		// MaxScanTokenSize: 64k 
+		// MaxScanTokenSize: 64k
 		readbuf := make([]byte, 0, 64*1024)
 		// Resize Buffer: 1M
 		scanner.Buffer(readbuf, 1024*1024)
