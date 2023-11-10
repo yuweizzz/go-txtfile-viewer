@@ -161,7 +161,9 @@ func WriteNotModified(w http.ResponseWriter) {
 }
 
 func SetContentAsHTML(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	}
 }
 
 func SetEtag(w http.ResponseWriter, etag string) {
@@ -195,7 +197,11 @@ func (f *TextFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stat, _ := file.Stat()
 	if !stat.IsDir() {
 		pd := NewPageData(file)
-		pd.SumContent()
+		charset := pd.SumContent()
+		// need to refactor
+		if charset != "UTF-8" {
+			w.Header().Set("Content-Type", "text/html; charset=gb18030")
+		}
 		SetEtag(w, pd.CheckSum)
 		if !CheckIfNoneMatch(w, r) {
 			SetContentAsHTML(w)

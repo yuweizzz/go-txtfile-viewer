@@ -14,6 +14,7 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"github.com/saintfish/chardet"
 )
 
 //go:embed static/html.tpl
@@ -49,11 +50,17 @@ func NewPageData(file http.File) *PageData {
 	return pd
 }
 
-func (pd *PageData) SumContent() {
+func (pd *PageData) SumContent() string {
 	raw, _ := io.ReadAll(pd.File)
 	sum := sha1.Sum(raw)
 	pd.CheckSum = hex.EncodeToString(sum[:])
+	detector := chardet.NewTextDetector()
+	charset, err := detector.DetectBest(raw)
+	if err != nil {
+		panic(err)
+	}
 	pd.Content = string(raw)
+	return charset.Charset
 }
 
 func (pd *PageData) Pretty() {
